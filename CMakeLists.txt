@@ -13,8 +13,6 @@ set(CMAKE_OBJDUMP arm-none-eabi-objdump)
 set(SIZE arm-none-eabi-size)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# compile .c files with cxx compiler
-set_source_files_properties(main.c PROPERTIES LANGUAGE CXX)
 # project settings
 project(mcu2 C CXX ASM)
 set(CMAKE_CXX_STANDARD 17)
@@ -74,3 +72,6 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
         COMMENT "Building ${HEX_FILE}
 Building ${BIN_FILE}")
+
+add_subdirectory(signalProcessing)
+target_link_libraries(${PROJECT_NAME}.elf signalProcessing)

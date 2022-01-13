@@ -15,10 +15,12 @@
   *
   ******************************************************************************
   */
+#include "cppmain.h"
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
+#include "../../signalProcessing/public/cppmain.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -98,18 +100,7 @@ static void MX_TIM11_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void set_led_bit(uint8_t led_bit)
-{
-//    const GPIO_TypeDef * port = GPIOE;
-    for (int i=0;i<7;++i){
-        if (led_bit & (1<<i)){
-            //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0<<i, GPIO_PIN_SET);
-            HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0<<i, GPIO_PIN_SET);
-        } else {
-            HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0<<i, GPIO_PIN_RESET);
-        }
-    }
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -161,12 +152,41 @@ int main(void)
   MX_TIM11_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  // set led states
-  // set all led gpio high
+  // send pointers to hardware to the main task
+  struct p_HW hardware = {
+          .adc1 = &hadc1,
+          .adc2 = &hadc2,
+          .adc3 = &hadc3,
+          .can1 = &hcan1,
+          .i2c1 = &hi2c1,
+          .i2c2 = &hi2c2,
+          .iwdg = &hiwdg,
+          .spi3 = &hspi3,
+          .tim1 = &htim1,
+          .tim2 = &htim2,
+          .tim3 = &htim3,
+          .tim4 = &htim4,
+          .tim8 = &htim8,
+          .tim10 = &htim10,
+          .tim11 = &htim11,
+          .uart1 = &huart1,
+          .uart2 = &huart2,
+          .uart3 = &huart3,
+          .uart6 = &huart6
+  };
 
-    set_led_bit(7);
+
+    void HAL_SYSTICK_Callback(void) {
+        // invert gpio3 pin4
+        HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);
+//        HAL_IncTick();
+//        HAL_SYSTICK_IRQHandler();
+        //ledPatern();
+
+    }
   /* USER CODE END 2 */
 
+    cppmain(hardware);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint8_t ledCounter = 10u;
@@ -174,7 +194,6 @@ int main(void)
   {
       const uint8_t lastCount = ledCounter;
       ledCounter++;
-      set_led_bit(ledCounter);
 
 
     // kick watchdog
@@ -182,7 +201,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
+
   /* USER CODE END 3 */
 }
 

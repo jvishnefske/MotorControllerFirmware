@@ -2,5 +2,5 @@ include(../cmake/pmm.cmake)
 pmm(VCPKG REVISION 2021.05.12 REQUIRES catch2)
 find_package(Catch2 CONFIG REQUIRED)
 add_executable(test1 main.cc)
-#Catch2::Catch2
-target_link_libraries(test1 ${CATCH2_LIBRARIES})
+target_link_libraries(test1 Catch2::Catch2)
+#target_link_libraries(test1 ${CATCH2_LIBRARIES})

@@ -36,7 +36,27 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+struct p_HW{
+    ADC_HandleTypeDef *adc1;
+    ADC_HandleTypeDef *adc2;
+    ADC_HandleTypeDef *adc3;
+    CAN_HandleTypeDef *can1;
+    I2C_HandleTypeDef *i2c1;
+    I2C_HandleTypeDef *i2c2;
+    IWDG_HandleTypeDef *iwdg;
+    SPI_HandleTypeDef *spi3;
+    TIM_HandleTypeDef *tim1;
+    TIM_HandleTypeDef *tim2;
+    TIM_HandleTypeDef *tim3;
+    TIM_HandleTypeDef *tim4;
+    TIM_HandleTypeDef *tim8;
+    TIM_HandleTypeDef *tim10;
+    TIM_HandleTypeDef *tim11;
+    UART_HandleTypeDef *uart1;
+    UART_HandleTypeDef *uart2;
+    UART_HandleTypeDef *uart3;
+    UART_HandleTypeDef *uart6;
+};
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
