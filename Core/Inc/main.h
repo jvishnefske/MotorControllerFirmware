@@ -56,6 +56,7 @@ struct p_HW{
     UART_HandleTypeDef *uart2;
     UART_HandleTypeDef *uart3;
     UART_HandleTypeDef *uart6;
+    uint32_t * pTickCounter;
 };
 /* USER CODE END ET */
 

@@ -9,7 +9,11 @@
 extern "C" {
 #endif
 
+void my_systick_Callback(void);
 
+#ifdef __cplusplus
+[[noreturn]]
+#endif
 void cppmain(struct p_HW hardware);
 
 

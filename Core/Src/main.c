@@ -153,6 +153,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   // send pointers to hardware to the main task
+  uint32_t tickCounter = 0;
   struct p_HW hardware = {
           .adc1 = &hadc1,
           .adc2 = &hadc2,
@@ -172,13 +173,16 @@ int main(void)
           .uart1 = &huart1,
           .uart2 = &huart2,
           .uart3 = &huart3,
-          .uart6 = &huart6
+          .uart6 = &huart6,
+          .pTickCounter = &tickCounter
   };
 
 
     void HAL_SYSTICK_Callback(void) {
         // invert gpio3 pin4
-        HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);
+        //HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);
+        my_systick_Callback();
+        tickCounter++;
 //        HAL_IncTick();
 //        HAL_SYSTICK_IRQHandler();
         //ledPatern();
@@ -186,7 +190,7 @@ int main(void)
     }
   /* USER CODE END 2 */
 
-    cppmain(hardware);
+  cppmain(hardware);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint8_t ledCounter = 10u;
