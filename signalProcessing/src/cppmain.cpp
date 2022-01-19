@@ -131,15 +131,80 @@ namespace {
         }
     };
 
-    class Pwm {
+    class ThreePhasePwm {
         using Numeric = float;
     private:
         //handle to the timer
         TIM_HandleTypeDef m_timer;
+        TIM_OC_InitTypeDef m_sConfig1;
+        TIM_OC_InitTypeDef m_sConfig2;
+        TIM_OC_InitTypeDef m_sConfig3;
+        TIM_OC_InitTypeDef m_sConfig4;
     public:
-        Pwm(TIM_HandleTypeDef timer) : m_timer(timer) {
-            // init timer
+        ThreePhasePwm(TIM_HandleTypeDef timer) : m_timer(timer) {
+            // init for advanced pwm count up and down 20khz
             HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_1);
+            HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_2);
+            HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_3);
+            // set pwm time base
+            m_timer.Init.Prescaler = 0;
+            m_timer.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
+            m_timer.Init.Period = 0xFFFF;
+            m_timer.Init.RepetitionCounter = 0x080;
+            HAL_TIM_Base_Init(&m_timer);
+
+//          TIM_Base_SetConfig(&m_timer, &m_timer.Init);
+            // SET COUNT TO 4096 FOR 20KHZ
+
+            // initialize pwm config
+            m_sConfig1 = {
+                    .OCMode = TIM_OCMODE_PWM1,
+                    .Pulse = 0xFFFF,
+                    .OCPolarity = TIM_OCPOLARITY_HIGH,
+                    .OCNPolarity = TIM_OCNPOLARITY_HIGH,
+                    .OCFastMode = TIM_OCFAST_DISABLE,
+                    .OCIdleState = TIM_OCIDLESTATE_RESET,
+                    .OCNIdleState = TIM_OCNIDLESTATE_RESET
+            };
+            m_sConfig2 = {
+                    .OCMode = TIM_OCMODE_PWM1,
+                    .Pulse = 0xFFFF,
+                    .OCPolarity = TIM_OCPOLARITY_HIGH,
+                    .OCNPolarity = TIM_OCNPOLARITY_HIGH,
+                    .OCFastMode = TIM_OCFAST_DISABLE,
+                    .OCIdleState = TIM_OCIDLESTATE_RESET,
+                    .OCNIdleState = TIM_OCNIDLESTATE_RESET
+            };
+            m_sConfig3 = {
+                    .OCMode = TIM_OCMODE_PWM1,
+                    .Pulse = 0xFFFF,
+                    .OCPolarity = TIM_OCPOLARITY_HIGH,
+                    .OCNPolarity = TIM_OCNPOLARITY_HIGH,
+                    .OCFastMode = TIM_OCFAST_DISABLE,
+                    .OCIdleState = TIM_OCIDLESTATE_RESET,
+                    .OCNIdleState = TIM_OCNIDLESTATE_RESET
+            };
+            m_sConfig4 = {
+                    .OCMode = TIM_OCMODE_PWM1,
+                    .Pulse = 0xFFFF,
+                    .OCPolarity = TIM_OCPOLARITY_HIGH,
+                    .OCNPolarity = TIM_OCNPOLARITY_HIGH,
+                    .OCFastMode = TIM_OCFAST_DISABLE,
+                    .OCIdleState = TIM_OCIDLESTATE_RESET,
+                    .OCNIdleState = TIM_OCNIDLESTATE_RESET
+            };
+
+            //m_sConfig1.OCPolarity = TIM_OCPOLARITY_HIGH;
+            HAL_TIM_PWM_ConfigChannel(&m_timer, &m_sConfig1, TIM_CHANNEL_1);
+            HAL_TIM_PWM_ConfigChannel(&m_timer, &m_sConfig2, TIM_CHANNEL_2);
+            HAL_TIM_PWM_ConfigChannel(&m_timer, &m_sConfig3, TIM_CHANNEL_3);
+            HAL_TIM_PWM_ConfigChannel(&m_timer, &m_sConfig4, TIM_CHANNEL_4);
+            // set channel 4 to 100% duty cycle
+
+            HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_1);
+            HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_2);
+            HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_3);
+            HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_4);
         }
         void update_from_phasePQ(Numeric  p, Numeric q,Numeric theta){
             // todo update to constexpr funnction
@@ -270,11 +335,14 @@ void my_systick_Callback(void) {
     LedPatern ledPattern;
     NokiaLcd lcd(*hw.spi3);
     lcd.send_bitmap48_64({});
-    Pwm pwm(*hw.tim1);
+    ThreePhasePwm pwm1(* (hw.tim1));
+    ThreePhasePwm pwm2(* (hw.tim2));
+    ThreePhasePwm pwm3(* (hw.tim3));
+    ThreePhasePwm pwm4(* (hw.tim4));
     for(;;) {
         HAL_IWDG_Refresh(global_hw.iwdg);
         ledPattern();
-        HAL_Delay(1);
+        HAL_Delay(0);
         std::array<uint32_t, 8> adc_buffer={1,2,3};
         // convert buffer to json array.
         std::string json_string = "[";
@@ -294,10 +362,8 @@ void my_systick_Callback(void) {
         // find length of null terminated string in hello
         const auto length = std::string(hello.begin(), hello.end()).find('\0');
 
-        CDC_Transmit_HS(hello.data(), length-1);
+        //CDC_Transmit_HS(hello.data(), length-1);
         //CDC_Transmit_HS( (uint8_t*) json_string.c_str(), json_string.size());
-        ledPattern();
-        HAL_Delay(1);
     }
 }
 }
