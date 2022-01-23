@@ -16,6 +16,13 @@ void my_systick_Callback(void);
 #endif
 void cppmain(struct p_HW hardware);
 
+    enum Event{
+        kTick,
+        kDebug,
+        kMotorUpdate,
+        kTimer14
+    };
+    void push_message(enum Event);
 
 #ifdef __cplusplus
 } // extern "C"
