@@ -2,7 +2,7 @@
 project(signalProcessing)
 cmake_minimum_required(VERSION 3.10)
 list(APPEND CMAKE_PREFIX_PATH $CMAKE_CURRENT_SOURCE_DIR/cmake)
-
+add_subdirectory(CMSIS_5/CMSIS/DSP/Source)
 add_library(signalProcessing
         src/cppmain.cpp
         src/KalmanFilter.cpp

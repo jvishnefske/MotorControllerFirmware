@@ -59,23 +59,12 @@ namespace math{
                             : k * (k + 1) - x2 +
                               (k * (k + 1) * x2) / sin_cfrac(x2, k + 2, n - 1);
         }
-//        template <typename Real>
-//        constexpr Real sqrt_newton(Real x, Real guess) {
-//            return is_close(guess * guess, x)
-//                   ? guess
-//                   : sqrt_newton(x, (guess + x / guess) / static_cast<Real>(2));
-//        }
 
         template <typename Real>
         constexpr Real sqr(Real x) {
             return x * x;
         }
-    }// namespace detail
-//    template <typename Real>
-//    constexpr Real sqrt(Real x) {
-//        return (x < 0) ? throw std::domain_error("x >= 0")
-//                       : detail::sqrt_newton(x, x);
-//    }
+    }
     template <typename Real>
     constexpr Real sin(Real x) {
         return detail::wrap(x) /
@@ -105,9 +94,6 @@ namespace {
 
     // class is templated to all possible Callable types
     class Executor {
-        // variant is a union of all possible types
-        //std::variant<int> callable;
-        // execute a sequence of callables
         template<class Callable>
         constexpr void add(Callable c) {
             // add callable to a variant queue
@@ -160,9 +146,6 @@ namespace {
             HAL_TIM_PWM_DeInit(&m_timer);
             HAL_TIM_PWM_Init(&m_timer);
             HAL_TIM_Base_Init(&m_timer);
-
-//          TIM_Base_SetConfig(&m_timer, &m_timer.Init);
-            // SET COUNT TO 4096 FOR 20KHZ
             // initialize pwm config
             m_sConfig1 = {
                     .OCMode = TIM_OCMODE_PWM1,
@@ -194,12 +177,10 @@ namespace {
             //m_period
             m_sConfig4.Pulse = 0xffff;
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_4, 0xffff);
-            //HAL_TIM_PWM_ConfigChannel(&m_timer, &m_sConfig4, TIM_CHANNEL_4);
         }
         void disable_output(){
             m_sConfig4.Pulse = 0;
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_4, 0);
-            //HAL_TIM_PWM_ConfigChannel(&m_timer, &m_sConfig4, TIM_CHANNEL_4);
         }
         constexpr void update_from_phasePQ(Numeric  p, Numeric q,Numeric theta){
             // todo update to constexpr funnction
@@ -399,12 +380,12 @@ void my_systick_Callback(void) {
     pwm2.setabc(0,0,0);
 
     float angle = 0;
-    constexpr float d = .05; // the magnitude of the sinusoid
+    constexpr float d = .01; // the magnitude of the sinusoid
     for(;;) {
         HAL_IWDG_Refresh(global_hw.iwdg);
         ledPattern();
         // todo: move pwm update into a timer callback
-        angle += .01;
+        angle += .003;
         constexpr float twopi = 6.283185307179586476925286766559;
         if(angle > twopi) {
             angle -= twopi;

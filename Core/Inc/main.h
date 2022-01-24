@@ -102,6 +102,8 @@ void Error_Handler(void);
 #define gps_uart1_tx_GPIO_Port GPIOA
 #define gps_uart1_rx_Pin GPIO_PIN_10
 #define gps_uart1_rx_GPIO_Port GPIOA
+#define rs485_de_Pin GPIO_PIN_4
+#define rs485_de_GPIO_Port GPIOD
 #define servo1_Pin GPIO_PIN_8
 #define servo1_GPIO_Port GPIOB
 #define servo2_Pin GPIO_PIN_9
