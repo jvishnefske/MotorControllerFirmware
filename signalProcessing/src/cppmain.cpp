@@ -18,7 +18,7 @@
  * performance notes runs led RelWithDebInfo at 476 khz
  *
  */
-
+#include <dsp/controller_functions.h>
 // todo moc hal so this is testable cross platform
 #include "cppmain.h"
 #include "main.h"
@@ -182,8 +182,12 @@ namespace {
             m_sConfig4.Pulse = 0;
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_4, 0);
         }
-        constexpr void update_from_phasePQ(Numeric  p, Numeric q,Numeric theta){
+        void update_from_phasePQ(Numeric  d, Numeric q,Numeric theta){
             // todo update to constexpr funnction
+            const auto sin_theta = std::sin(theta);
+            const auto cos_theta = std::cos(theta);
+
+#if 0 // trying to make this faster.
             const auto alpha = p*math::cos(theta) - q*math::sin(theta);
             const auto beta = p*math::sin(theta) + q*math::cos(theta);
             // inverse clark transform converts 90 degree phase alpha, beta to three phase
@@ -192,6 +196,14 @@ namespace {
             const auto a = alpha;
             const auto b= -1.0F/2*alpha + sqr3Over2*beta;
             const auto c = -1.0F/2*alpha - sqr3Over2*beta;
+#endif
+            float alpha{}, beta{};
+             auto id = d;
+            constexpr auto iq = 0;
+            arm_inv_park_f32(id, iq, & alpha, &beta, sin_theta, cos_theta);
+            float a{},b{};
+            arm_inv_clarke_f32(alpha, beta, &a, &b);
+            const auto c = a+b;
             setabc(a, b, c);
         }
         template<typename Numeric>
@@ -238,9 +250,29 @@ namespace {
             constexpr auto min_pwm = 0;
             constexpr auto max_duty = 1;
             constexpr auto min_duty = -1;
-            m_sConfig1.Pulse = scaleToRange<float, m_period>(a);
-            m_sConfig2.Pulse = scaleToRange<float, m_period>(b);
-            m_sConfig3.Pulse = scaleToRange<float, m_period>(c);
+//            m_sConfig1.Pulse = scaleToRange<float, m_period>(a);
+//            m_sConfig2.Pulse = scaleToRange<float, m_period>(b);
+//            m_sConfig3.Pulse = scaleToRange<float, m_period>(c);
+            // truncate inputs
+            if(a > 1.0F || a < -1.0F){
+                // error handler
+                Error_Handler();
+            }
+            if(b > 1.0F || b < -1.0F){
+                // error handler
+                Error_Handler();
+            }
+            if(c > 1.0F || c < -1.0F){
+                // error handler
+                Error_Handler();
+            }
+                m_sConfig1.Pulse = max_pwm;
+            const auto a_ = std::max(std::min(a, 1.0F), -1.0F);
+            const auto b_ = std::max(std::min(b, 1.0F), -1.0F);
+            const auto c_ = std::max(std::min(c, 1.0F), -1.0F);
+            m_sConfig1.Pulse = static_cast<uint32_t>((a_+1) * m_period)/2;
+            m_sConfig2.Pulse = static_cast<uint32_t>((b_+1) * m_period)/2;
+            m_sConfig3.Pulse = static_cast<uint32_t>((c_+1) * m_period)/2;
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_1, m_sConfig1.Pulse);
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_2, m_sConfig2.Pulse);
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_3, m_sConfig3.Pulse);
@@ -349,15 +381,6 @@ extern "C" {
     void push_message(enum Event e){
         // todo
     }
-// function to call at each system tick
-void my_systick_Callback(void) {
-
-//        HAL_IncTick();
-//        HAL_SYSTICK_IRQHandler();
-    //ledPattern();
-
-}
-
 [[noreturn]] void cppmain(struct p_HW hw) {
     global_hw = hw;
     set_led_bit(0x7);
@@ -380,19 +403,20 @@ void my_systick_Callback(void) {
     pwm2.setabc(0,0,0);
 
     float angle = 0;
-    constexpr float d = .01; // the magnitude of the sinusoid
+    constexpr float d = .05; // the magnitude of the sinusoid
     for(;;) {
+        //Error_Handler();
         HAL_IWDG_Refresh(global_hw.iwdg);
         ledPattern();
         // todo: move pwm update into a timer callback
-        angle += .003;
-        constexpr float twopi = 6.283185307179586476925286766559;
-        if(angle > twopi) {
-            angle -= twopi;
-        }
+        angle += .0314;
+//        constexpr float twopi = 6.283185307179586476925286766559;
+//        if(angle > twopi) {
+//            angle -= twopi;
+//        }
        pwm2.update_from_phasePQ(d,0, angle);
         //pwm2.setabc(angle,(angle),(angle));
-        //HAL_Delay(0);
+        HAL_Delay(0);
         std::array<uint32_t, 8> adc_buffer={1,2,3};
         // convert buffer to json array.
         /*std::string json_string = "[";*/
