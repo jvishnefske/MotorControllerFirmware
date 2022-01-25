@@ -23,6 +23,7 @@
 #include "cppmain.h"
 #include "main.h"
 //#include "usbd_cdc.h"
+#include "signal.h"
 #include "usbd_cdc_if.h"
 #include <stm32f4xx.h>
 #include <stm32f4xx_hal_adc.h>
@@ -127,6 +128,9 @@ namespace {
     class ThreePhasePwm {
         using Numeric = float;
     private:
+        arm_pid_instance_f32 m_thetaPid{};
+        float m_thetaSin{};
+        float m_thetaCos{};
         //handle to the timer
         TIM_HandleTypeDef m_timer;
         TIM_OC_InitTypeDef m_sConfig1;
@@ -137,6 +141,11 @@ namespace {
         static constexpr uint32_t m_period = 42000/40; // divide by desired frequency in khz
     public:
         ThreePhasePwm(TIM_HandleTypeDef timer) : m_timer(timer) {
+            m_thetaPid.Kp = 0.5;
+            m_thetaPid.Ki = 0.0;
+            m_thetaPid.Kd = 0.2;
+            arm_sin_cos_f32(0, &m_thetaSin, &m_thetaCos);
+            arm_pid_init_f32(&m_thetaPid, true);
             const auto pulse_width = m_period / 2;
             // set pwm time base
             m_timer.Init.Prescaler = 0;
@@ -172,6 +181,18 @@ namespace {
             HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_2);
             HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_3);
             HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_4);
+        }
+        void updateCurrent(float a, float b){
+            float alpha{}, beta{};
+            arm_clarke_f32(a, b, &alpha, &beta);
+//            float theta = m_thetaPid.
+            float d{}, q{};
+            arm_park_f32(alpha, beta, &d, &q,m_thetaSin, m_thetaCos);
+            const auto new_theta_estimate = atan2(d, q); // todo check ordering
+            arm_pid_f32(&m_thetaPid, new_theta_estimate);
+            const auto new_theta = m_thetaPid.state[2];
+            arm_sin_cos_f32(new_theta, &m_thetaSin, &m_thetaCos);
+            update_from_phasePQ(d, q, new_theta);
         }
         void enable_output(){
             //m_period
