@@ -26,6 +26,7 @@ target_include_directories(signalProcessing PRIVATE
         )
 target_link_libraries(signalProcessing PRIVATE
         CMSISDSPController
+        CMSISDSPCommon
         )
 # skip unit test if we are compiling with arm-none-eabi
 message(STATUS "Compiling with ${CMAKE_SYSTEM_PROCESSOR}")
