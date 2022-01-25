@@ -7,6 +7,8 @@
 #ifndef MCU2_KALMANFILTER_H
 #define MCU2_KALMANFILTER_H
 
+#include <array>
+
 template<int M,int N, typename Numeric>
 class Matrix {
     // addition operator
@@ -35,6 +37,11 @@ class Matrix {
 private:
     std::array<std::array<Numeric,N>,M> matrix;
 };
+
+//vector class is a nx1 matrix
+template<int N, typename Numeric>
+using Vector = Matrix<N,1,Numeric>;
+
 template<int N, typename Numeric>
 class KalmanFilter {
 public:
@@ -51,6 +58,12 @@ public:
     using InputVector = std::array<Numeric, N>;
     void update(const InputVector &input);
     InputVector predict();
+private:
+    Vector<N, Numeric> x;
+    Matrix<N, N, Numeric> P;
+    Matrix<N, N, Numeric> Q;
+    Matrix<N, N, Numeric> R;
+    Matrix<N, N, Numeric> I;
 };
 
 

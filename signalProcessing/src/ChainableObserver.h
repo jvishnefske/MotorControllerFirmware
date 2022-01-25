@@ -4,10 +4,11 @@
 
 #ifndef MCU2_CHAINABLEOBSERVER_H
 #define MCU2_CHAINABLEOBSERVER_H
-
+#include <array>
+#include <functional>
 
 class ChainableObserver {
-
+    void then(ChainableObserver *next);
 };
 
 
@@ -35,11 +36,14 @@ public:
     }
 };
 
+
 struct Task{
     std::function<void()> func;
     int time_start;
     int time_period;
+    // implement comparable operators
 };
+
 
 class Scheduler{
 private:
@@ -49,20 +53,16 @@ private:
 public:
     void update(){
         // iterate through sleeping tasks
-        while(!sleeping_tasks.isEmpty()){
-            Task task = sleeping_tasks.dequeue();
+        for(auto task: tasks){
             if(task.time_start <= time){
                 ready_tasks.enqueue(task);
-            }
-            else{
-                sleeping_tasks.enqueue(task);
-                break;
             }
         }
     }
     void run(){
         while(!ready_tasks.isEmpty()){
-            const Task task = ready_tasks.dequeue();
+            const auto task = ready_tasks.dequeue();
+            // todo: find a clean way to do this without std::function since newlib seems to have issues with it
             task.func();
         }
     }

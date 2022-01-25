@@ -36,7 +36,28 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+struct p_HW{
+    ADC_HandleTypeDef *adc1;
+    ADC_HandleTypeDef *adc2;
+    ADC_HandleTypeDef *adc3;
+    CAN_HandleTypeDef *can1;
+    I2C_HandleTypeDef *i2c1;
+    I2C_HandleTypeDef *i2c2;
+    IWDG_HandleTypeDef *iwdg;
+    SPI_HandleTypeDef *spi3;
+    TIM_HandleTypeDef *tim1;
+    TIM_HandleTypeDef *tim2;
+    TIM_HandleTypeDef *tim3;
+    TIM_HandleTypeDef *tim4;
+    TIM_HandleTypeDef *tim8;
+    TIM_HandleTypeDef *tim10;
+    TIM_HandleTypeDef *tim11;
+    UART_HandleTypeDef *uart1;
+    UART_HandleTypeDef *uart2;
+    UART_HandleTypeDef *uart3;
+    UART_HandleTypeDef *uart6;
+    uint32_t * pTickCounter;
+};
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -81,6 +102,8 @@ void Error_Handler(void);
 #define gps_uart1_tx_GPIO_Port GPIOA
 #define gps_uart1_rx_Pin GPIO_PIN_10
 #define gps_uart1_rx_GPIO_Port GPIOA
+#define rs485_de_Pin GPIO_PIN_4
+#define rs485_de_GPIO_Port GPIOD
 #define servo1_Pin GPIO_PIN_8
 #define servo1_GPIO_Port GPIOB
 #define servo2_Pin GPIO_PIN_9

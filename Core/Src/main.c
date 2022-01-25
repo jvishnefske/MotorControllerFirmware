@@ -15,6 +15,7 @@
   *
   ******************************************************************************
   */
+#include "cppmain.h"
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -43,6 +44,9 @@
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
 ADC_HandleTypeDef hadc3;
+DMA_HandleTypeDef hdma_adc1;
+DMA_HandleTypeDef hdma_adc2;
+DMA_HandleTypeDef hdma_adc3;
 
 CAN_HandleTypeDef hcan1;
 
@@ -65,6 +69,8 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 UART_HandleTypeDef huart6;
+DMA_HandleTypeDef hdma_usart2_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -92,24 +98,14 @@ static void MX_I2C1_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_TIM11_Init(void);
+static void MX_DMA_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void set_led_bit(uint8_t led_bit)
-{
-//    const GPIO_TypeDef * port = GPIOE;
-    for (int i=0;i<7;++i){
-        if (led_bit & (1<<i)){
-            //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0<<i, GPIO_PIN_SET);
-            HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0<<i, GPIO_PIN_SET);
-        } else {
-            HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0<<i, GPIO_PIN_RESET);
-        }
-    }
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -159,14 +155,48 @@ int main(void)
   MX_SPI3_Init();
   MX_TIM10_Init();
   MX_TIM11_Init();
+  MX_DMA_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  // set led states
-  // set all led gpio high
+  // send pointers to hardware to the main task
+  uint32_t tickCounter = 0;
+  struct p_HW hardware = {
+          .adc1 = &hadc1,
+          .adc2 = &hadc2,
+          .adc3 = &hadc3,
+          .can1 = &hcan1,
+          .i2c1 = &hi2c1,
+          .i2c2 = &hi2c2,
+          .iwdg = &hiwdg,
+          .spi3 = &hspi3,
+          .tim1 = &htim1,
+          .tim2 = &htim2,
+          .tim3 = &htim3,
+          .tim4 = &htim4,
+          .tim8 = &htim8,
+          .tim10 = &htim10,
+          .tim11 = &htim11,
+          .uart1 = &huart1,
+          .uart2 = &huart2,
+          .uart3 = &huart3,
+          .uart6 = &huart6,
+          .pTickCounter = &tickCounter
+  };
 
-    set_led_bit(7);
+
+    void HAL_SYSTICK_Callback(void) {
+        // invert gpio3 pin4
+        //HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);
+        my_systick_Callback();
+        tickCounter++;
+//        HAL_IncTick();
+//        HAL_SYSTICK_IRQHandler();
+        //ledPatern();
+
+    }
   /* USER CODE END 2 */
 
+  cppmain(hardware);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint8_t ledCounter = 10u;
@@ -174,7 +204,6 @@ int main(void)
   {
       const uint8_t lastCount = ledCounter;
       ledCounter++;
-      set_led_bit(ledCounter);
 
 
     // kick watchdog
@@ -182,7 +211,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
+
   /* USER CODE END 3 */
 }
 
@@ -222,7 +253,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
@@ -573,11 +604,11 @@ static void MX_TIM1_Init(void)
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
   htim1.Init.Period = 65535;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
@@ -1054,13 +1085,13 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 3000000;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
   huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_8;
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
@@ -1134,6 +1165,35 @@ static void MX_USART6_UART_Init(void)
   /* USER CODE BEGIN USART6_Init 2 */
 
   /* USER CODE END USART6_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA1_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* DMA2_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
 
 }
 
@@ -1213,6 +1273,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(lcd_reset_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : rs485_de_Pin */
+  GPIO_InitStruct.Pin = rs485_de_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(rs485_de_GPIO_Port, &GPIO_InitStruct);
 
 }
 
