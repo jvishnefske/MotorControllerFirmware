@@ -426,34 +426,27 @@ extern "C" {
     float angle = 0;
     constexpr float d = .05; // the magnitude of the sinusoid
     for(;;) {
+        std::array<uint32_t, 8> adc_buffer={1,2,3};
+        for (auto sensorCurrent: {1,2,3} ) {
+            HAL_IWDG_Refresh(global_hw.iwdg);
+
+
+            angle += .03;
+            pwm2.setabc(angle, 0, 0);
+            pwm2.update_from_phasePQ(angle, 0, 0);
+            pwm2.enable_output();
+            ledPattern();
+            HAL_Delay(0);
+            ledPattern();
+        }
         //Error_Handler();
-        HAL_IWDG_Refresh(global_hw.iwdg);
-        ledPattern();
         // todo: move pwm update into a timer callback
-        angle += .0314;
 //        constexpr float twopi = 6.283185307179586476925286766559;
 //        if(angle > twopi) {
 //            angle -= twopi;
 //        }
-       pwm2.update_from_phasePQ(d,0, angle);
         //pwm2.setabc(angle,(angle),(angle));
-        HAL_Delay(0);
-        std::array<uint32_t, 8> adc_buffer={1,2,3};
-        // convert buffer to json array.
-        /*std::string json_string = "[";*/
-        // iterate over adc buffer
-/*        std::for_each_n(std::begin(adc_buffer), adc_buffer.size()-1, [&json_string](uint32_t value) {
-            json_string += std::to_string(value) + ",";
-        });
-        if (adc_buffer.size() > 0) {
-            json_string += std::to_string(adc_buffer.back()) + "]";
-        }else{
-            json_string += "]";
-        }*/
-        // send json string to usb serial
-//        json_string = "[1,2,3]";
-//        std::array<uint8_t, 1000> hello{"[5,6,7,8]"};
-//        std::copy(std::begin(json_string), std::end(json_string), std::begin(hello));
+
         // find length of null terminated string in hello
         //const auto length = std::string(hello.begin(), hello.end()).find('\0');
 
