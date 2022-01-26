@@ -46,19 +46,21 @@ namespace constants{
 }
 //input an angle in radians, and track in absolute rotation. if the new angle is more that 2pi
 //from the old angle, it will be wrapped around to the other side of the circle.
-class MonotonicAngle{
+class AngleTracker{
     float angle;
     float pi = constants::pi;
 public:
-    explicit MonotonicAngle(float angle=0.0f):angle(angle){}
+    explicit AngleTracker(float angle=0.0f):angle(angle){}
     float get(){return angle;}
     float set(float new_sensor_value){
-        // find a new angle based on the sensor value within 2pi of old m_angle.
-        // new data can be shifted by increments of 2pi;
-        auto divmod = std::divm_angle, 2*M_PI);
-        auto new_angle = divmod.quot + new_sensor_value;
-        if (new_angle < 0) new_angle += 2*M_PI;
-        return new_angle;
+        auto equivilent_angle = new_sensor_value;
+        auto delta = equivilent_angle - angle;
+        //make delta between -pi and pi by adding or subtracting 2pi with
+        // floating point remainder
+        auto remainder = std::fmod(delta+pi,constants::two_pi);
+        if(remainder < 0) remainder += constants::two_pi;
+        angle += remainder - pi;
+        return angle;
     }
 };
 
@@ -147,7 +149,7 @@ namespace {
         using Numeric = float;
     private:
         arm_pid_instance_f32 m_thetaPid{};
-        MonotonicAngle m_raw_theta{};
+         m_raw_theta{};
         float m_thetaSin{};
         float m_thetaCos{};
         //handle to the timer
