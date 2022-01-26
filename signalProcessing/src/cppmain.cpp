@@ -34,7 +34,8 @@
 #include <algorithm>
 #include <functional>
 #include <valarray>
-
+#include <numeric>
+#include <cmath>
 namespace constants{
     constexpr float pi = 3.14159265358979323846;
     constexpr float two_pi = 2*pi;
@@ -43,6 +44,24 @@ namespace constants{
     constexpr float three_quarter_pi = 3*pi/4;
     constexpr float one_over_pi = 1/pi;
 }
+//input an angle in radians, and track in absolute rotation. if the new angle is more that 2pi
+//from the old angle, it will be wrapped around to the other side of the circle.
+class MonotonicAngle{
+    float angle;
+    float pi = constants::pi;
+public:
+    explicit MonotonicAngle(float angle=0.0f):angle(angle){}
+    float get(){return angle;}
+    float set(float new_sensor_value){
+        // find a new angle based on the sensor value within 2pi of old m_angle.
+        // new data can be shifted by increments of 2pi;
+        auto divmod = std::divm_angle, 2*M_PI);
+        auto new_angle = divmod.quot + new_sensor_value;
+        if (new_angle < 0) new_angle += 2*M_PI;
+        return new_angle;
+    }
+};
+
 namespace math{
     namespace detail {
         template<typename Real>
@@ -124,11 +143,11 @@ namespace {
             last_gray_code = grey_code;
         }
     };
-
     class ThreePhasePwm {
         using Numeric = float;
     private:
         arm_pid_instance_f32 m_thetaPid{};
+        MonotonicAngle m_raw_theta{};
         float m_thetaSin{};
         float m_thetaCos{};
         //handle to the timer
@@ -143,8 +162,10 @@ namespace {
         ThreePhasePwm(TIM_HandleTypeDef timer) : m_timer(timer) {
             m_thetaPid.Kp = 0.5;
             m_thetaPid.Ki = 0.0;
-            m_thetaPid.Kd = 0.2;
-            arm_sin_cos_f32(0, &m_thetaSin, &m_thetaCos);
+            m_thetaPid.Kd = 0.0;
+            m_thetaSin = math::sin(m_thetaPid.state[2]);
+            m_thetaCos = math::cos(m_thetaPid.state[2]);
+            //arm_sin_cos_f32(0, &m_thetaSin, &m_thetaCos);
             arm_pid_init_f32(&m_thetaPid, true);
             const auto pulse_width = m_period / 2;
             // set pwm time base
@@ -182,17 +203,28 @@ namespace {
             HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_3);
             HAL_TIM_PWM_Start(&m_timer, TIM_CHANNEL_4);
         }
-        void updateCurrent(float a, float b){
+        template <class Numeric>
+        constexpr Numeric truncate1(Numeric value) {
+            constexpr Numeric upper = 1.0;
+            constexpr Numeric lower = -1.0;
+            return std::min(std::max(value, lower), upper);
+        }
+        void updateCurrentAngle(float _a, float _b, float motorTorque){
+            const auto a = truncate1(_a);
+            const auto b = truncate1(_b);
             float alpha{}, beta{};
             arm_clarke_f32(a, b, &alpha, &beta);
 //            float theta = m_thetaPid.
             float d{}, q{};
             arm_park_f32(alpha, beta, &d, &q,m_thetaSin, m_thetaCos);
-            const auto new_theta_estimate = atan2(d, q); // todo check ordering
-            arm_pid_f32(&m_thetaPid, new_theta_estimate);
+            m_raw_theta.set(std::atan2(d, q)); // todo check ordering
+            arm_pid_f32(&m_thetaPid, m_raw_theta.get());
             const auto new_theta = m_thetaPid.state[2];
-            arm_sin_cos_f32(new_theta, &m_thetaSin, &m_thetaCos);
-            update_from_phasePQ(d, q, new_theta);
+//            arm_sin_cos_f32(new_theta, &m_thetaSin, &m_thetaCos);
+            m_thetaSin = std::sin(new_theta);
+            m_thetaCos = std::cos(new_theta);
+            update_from_phasePQ(motorTorque, 0);
+            //setabc(m_thetaCos*motorTorque, m_thetaCos*motorTorque, motorTorque*new_theta);
         }
         void enable_output(){
             //m_period
@@ -203,10 +235,14 @@ namespace {
             m_sConfig4.Pulse = 0;
             __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_4, 0);
         }
-        void update_from_phasePQ(Numeric  d, Numeric q,Numeric theta){
+        void update_from_phasePQ(Numeric d, Numeric q, Numeric theta){
+            m_thetaCos = std::cos(theta);
+            m_thetaSin = std::sin(theta);
+            return update_from_phasePQ(d, q);
+        }
+        void update_from_phasePQ(Numeric  d, Numeric q){
             // todo update to constexpr funnction
-            const auto sin_theta = std::sin(theta);
-            const auto cos_theta = std::cos(theta);
+
 
 #if 0 // trying to make this faster.
             const auto alpha = p*math::cos(theta) - q*math::sin(theta);
@@ -217,15 +253,17 @@ namespace {
             const auto a = alpha;
             const auto b= -1.0F/2*alpha + sqr3Over2*beta;
             const auto c = -1.0F/2*alpha - sqr3Over2*beta;
-#endif
+#else
             float alpha{}, beta{};
              auto id = d;
             constexpr auto iq = 0;
-            arm_inv_park_f32(id, iq, & alpha, &beta, sin_theta, cos_theta);
+            arm_inv_park_f32(id, iq, & alpha, &beta, m_thetaSin, m_thetaCos);
             float a{},b{};
             arm_inv_clarke_f32(alpha, beta, &a, &b);
-            const auto c = a+b;
-            setabc(a, b, c);
+            // solve for c where a+b+c = 0
+            const auto c = -(a+b);
+#endif
+            setabc(a*d, b*d, c*d);
         }
         template<typename Numeric>
         static constexpr Numeric envelope(Numeric input, Numeric lowerLimit, Numeric upperLimit){
@@ -275,22 +313,10 @@ namespace {
 //            m_sConfig2.Pulse = scaleToRange<float, m_period>(b);
 //            m_sConfig3.Pulse = scaleToRange<float, m_period>(c);
             // truncate inputs
-            if(a > 1.0F || a < -1.0F){
-                // error handler
-                Error_Handler();
-            }
-            if(b > 1.0F || b < -1.0F){
-                // error handler
-                Error_Handler();
-            }
-            if(c > 1.0F || c < -1.0F){
-                // error handler
-                Error_Handler();
-            }
-                m_sConfig1.Pulse = max_pwm;
-            const auto a_ = std::max(std::min(a, 1.0F), -1.0F);
-            const auto b_ = std::max(std::min(b, 1.0F), -1.0F);
-            const auto c_ = std::max(std::min(c, 1.0F), -1.0F);
+            float a_ = truncate1(a);
+            float b_ = truncate1(b);
+            float c_ = truncate1(c);
+            // scale to pwm period length. 0 input becomes fifty percent duty cycle
             m_sConfig1.Pulse = static_cast<uint32_t>((a_+1) * m_period)/2;
             m_sConfig2.Pulse = static_cast<uint32_t>((b_+1) * m_period)/2;
             m_sConfig3.Pulse = static_cast<uint32_t>((c_+1) * m_period)/2;
@@ -418,27 +444,37 @@ extern "C" {
     pwm3.update_from_phasePQ(0, 0,0);
     pwm4.update_from_phasePQ(0, 0,0);
     pwm1.disable_output();
-    pwm2.enable_output();
+    pwm2.disable_output();
     pwm3.disable_output();
-    pwm4.disable_output();
+    pwm4.enable_output();
     pwm2.setabc(0,0,0);
-
+    ledPattern();
     float angle = 0;
     constexpr float d = .05; // the magnitude of the sinusoid
     for(;;) {
         std::array<uint32_t, 8> adc_buffer={1,2,3};
-        for (auto sensorCurrent: {1,2,3} ) {
-            HAL_IWDG_Refresh(global_hw.iwdg);
-
-
-            angle += .03;
-            pwm2.setabc(angle, 0, 0);
-            pwm2.update_from_phasePQ(angle, 0, 0);
-            pwm2.enable_output();
-            ledPattern();
-            HAL_Delay(0);
-            ledPattern();
+        // iterate from 0 to 300
+        for (int i = 0; i < currentSignal.size(); i++) {
+            for(auto stepPerSample=0; stepPerSample<3;stepPerSample++) {
+                constexpr auto phase_offset = currentSignal.size() / 3;
+                const auto a_signal = currentSignal.at(i);
+                const auto b_signal = currentSignal.at((i + phase_offset) % currentSignal.size());
+                const auto c_signal = currentSignal.at((i + phase_offset + phase_offset) % currentSignal.size());
+                // do it for all 4 pwms
+                pwm1.updateCurrentAngle(a_signal, b_signal, d);
+                pwm2.updateCurrentAngle(b_signal, c_signal, d);
+                pwm3.updateCurrentAngle(c_signal, a_signal, d);
+                pwm4.updateCurrentAngle(a_signal, b_signal, d);
+                //pwm4.setabc(0,0,0);
+                HAL_IWDG_Refresh(global_hw.iwdg);
+                // update led before and after delay to find how much processing time we are spending.
+                ledPattern();
+                HAL_Delay(0);
+                ledPattern();
+            }
         }
+
+        //ledPattern();
         //Error_Handler();
         // todo: move pwm update into a timer callback
 //        constexpr float twopi = 6.283185307179586476925286766559;
