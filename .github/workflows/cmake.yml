@@ -37,6 +37,8 @@ jobs:
         run: |
           . <(curl https://aka.ms/vcpkg-init.sh -L)
           vcpkg activate
+          which arm-none-eabi-gcc
+          arm-none-eabi-gcc --version
           cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
