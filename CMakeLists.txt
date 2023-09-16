@@ -3,7 +3,6 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 cmake_minimum_required(VERSION 3.20)
 
-
 # specify cross compilers and tools
 # project settings
 project(mcu2 C CXX ASM)
@@ -12,6 +11,23 @@ message(STATUS "c++ compiler ${CMAKE_CXX_COMPILER}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
+
+set(COMPILE_WARN_OPTIONS -Werror=all -Werror=extra -Wno-error=unused-parameter)
+
+#-DARM_CPU=cortex-m4 -DCMAKE_TOOLCHAIN_FILE=CMSIS/DSP/gcc.cmake
+option(HARDWARE_FLOAT "enable hardware floating point" OFF)
+if(HARDWARE_FLOAT)
+    # Hard floating point
+    add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
+    add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+    add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+else()
+    # software floating point
+    add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+endif()
+
+add_compile_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
+add_compile_options(-ffunction-sections -fdata-sections -fno-common -fmessage-length=0)
 
 # uncomment to mitigate c++17 absolute addresses warnings
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
@@ -45,6 +61,7 @@ add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR
 add_link_options(-T ${LINKER_SCRIPT})
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
+target_compile_options(${PROJECT_NAME}.elf PRIVATE ${COMPILE_WARN_OPTIONS})
 add_subdirectory(signalProcessing)
 target_link_libraries(${PROJECT_NAME}.elf signalProcessing)
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
