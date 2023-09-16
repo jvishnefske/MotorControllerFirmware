@@ -8,7 +8,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMSIS_5/CMSIS/DSP/Sour
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR}/CMSIS_5)
 set(DSP ${ROOT}/CMSIS/DSP)
 list(APPEND CMAKE_MODULE_PATH ${DSP})
-set(ARM_CPU "cortex-m4")
 #include(GCC) # cmsis toolchain file consider adding to top level build, or replacing.
 add_subdirectory(${DSP}/Source bin_dsp)
 
@@ -17,6 +16,8 @@ add_library(signalProcessing
         src/KalmanFilter.cpp
         src/ChainableObserver.cpp
         )
+target_compile_options(signalProcessing PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_features(signalProcessing PRIVATE cxx_std_17)
 target_include_directories(signalProcessing PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/public
         )

@@ -1,3 +1,6 @@
 [submodule "lib/CMSIS_5"]
 	path = signalProcessing/CMSIS_5
 	url = https://github.com/ARM-software/CMSIS_5.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg

@@ -183,7 +183,7 @@ int main(void)
           .pTickCounter = &tickCounter
   };
 
-
+#if 0
     void HAL_SYSTICK_Callback(void) {
         // invert gpio3 pin4
         //HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);
@@ -194,6 +194,7 @@ int main(void)
         //ledPatern();
 
     }
+#endif
   /* USER CODE END 2 */
 
   cppmain(hardware);
@@ -202,7 +203,7 @@ int main(void)
   uint8_t ledCounter = 10u;
   while (1)
   {
-      const uint8_t lastCount = ledCounter;
+//      const uint8_t lastCount = ledCounter;
       ledCounter++;
 
 
