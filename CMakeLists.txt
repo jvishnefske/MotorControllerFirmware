@@ -2,15 +2,26 @@
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 cmake_minimum_required(VERSION 3.20)
-
+include(signalProcessing/CMSIS_5/CMSIS/DSP/Toolchain/GCC.cmake)
 # specify cross compilers and tools
+option(COMPILE_FOR_ARM "enable arm cortex-m architecture" ON)
+if(COMPILE_FOR_ARM)
+    set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+    set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
+    set(CMAKE_ASM_COMPILER  arm-none-eabi-gcc)
+    set(CMAKE_AR arm-none-eabi-ar)
+    set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
+    set(CMAKE_OBJDUMP arm-none-eabi-objdump)
+    set(SIZE arm-none-eabi-size)
+endif()
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+include(signalProcessing/CMSIS_5/CMSIS/DSP/gcc.cmake)
 # project settings
 project(mcu2 C CXX ASM)
 message(STATUS "systmem ${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM}")
 message(STATUS "c++ compiler ${CMAKE_CXX_COMPILER}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
-
 
 set(COMPILE_WARN_OPTIONS -Werror=all -Werror=extra -Wno-error=unused-parameter)
 
