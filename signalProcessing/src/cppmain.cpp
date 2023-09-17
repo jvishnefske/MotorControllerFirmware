@@ -101,7 +101,7 @@ namespace math{
 namespace {
     struct p_HW global_hw;
     constexpr void set_led_bit(uint8_t led_bit) {
-        constexpr uint16_t led_mask = 0x00ff;
+//        constexpr uint16_t led_mask = 0x00ff;
 #if 0
         for(int i=0;i<1;++i) {
             // the HAL methed requires two calls since the upper 16 bits of bssr,
@@ -243,6 +243,7 @@ namespace {
             return update_from_phasePQ(d, q);
         }
         void update_from_phasePQ(Numeric  d, Numeric q){
+            (void) q;
             // todo update to constexpr funnction
 
 
@@ -307,10 +308,12 @@ namespace {
         constexpr void setabc(const float a,const float b,const float c){
             // take a,b, c between 0 and 1 and convert to pwm duty cycle
             // todo make this constexpr
+#if 0
             constexpr auto max_pwm = m_period;
             constexpr auto min_pwm = 0;
             constexpr auto max_duty = 1;
             constexpr auto min_duty = -1;
+#endif
 //            m_sConfig1.Pulse = scaleToRange<float, m_period>(a);
 //            m_sConfig2.Pulse = scaleToRange<float, m_period>(b);
 //            m_sConfig3.Pulse = scaleToRange<float, m_period>(c);
@@ -408,6 +411,7 @@ namespace {
     public:
 
         static void conversion_complete(ADC_HandleTypeDef *hadc) {
+             (void) hadc;
             // get adc driver from static member
             //auto adc_driver = static_cast<AdcDriver*>(hadc->UserData);
             // call callback
@@ -428,6 +432,7 @@ namespace {
 
 extern "C" {
     void push_message(enum Event e){
+            (void) e;
         // todo
     }
 [[noreturn]] void cppmain(struct p_HW hw) {
@@ -451,12 +456,12 @@ extern "C" {
     pwm4.enable_output();
     pwm2.setabc(0,0,0);
     ledPattern();
-    float angle = 0;
+//    float angle = 0;
     constexpr float d = .05; // the magnitude of the sinusoid
     for(;;) {
-        std::array<uint32_t, 8> adc_buffer={1,2,3};
+//        std::array<uint32_t, 8> adc_buffer={1,2,3};
         // iterate from 0 to 300
-        for (int i = 0; i < currentSignal.size(); i++) {
+        for (auto i = 0U; i < currentSignal.size(); i++) {
             for(auto stepPerSample=0; stepPerSample<3;stepPerSample++) {
                 constexpr auto phase_offset = currentSignal.size() / 3;
                 const auto a_signal = currentSignal.at(i);

@@ -17,6 +17,8 @@ add_library(signalProcessing
         src/KalmanFilter.cpp
         src/ChainableObserver.cpp
         )
+target_compile_options(signalProcessing PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_features(signalProcessing PRIVATE cxx_std_17)
 target_include_directories(signalProcessing PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/public
         )
