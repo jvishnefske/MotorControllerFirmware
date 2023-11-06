@@ -149,7 +149,7 @@ namespace {
         using Numeric = float;
     private:
         arm_pid_instance_f32 m_thetaPid{};
-         m_raw_theta{};
+        float m_raw_theta{};
         float m_thetaSin{};
         float m_thetaCos{};
         //handle to the timer
@@ -219,8 +219,8 @@ namespace {
 //            float theta = m_thetaPid.
             float d{}, q{};
             arm_park_f32(alpha, beta, &d, &q,m_thetaSin, m_thetaCos);
-            m_raw_theta.set(std::atan2(d, q)); // todo check ordering
-            arm_pid_f32(&m_thetaPid, m_raw_theta.get());
+            m_raw_theta = std::atan2(d, q); // todo check ordering
+            arm_pid_f32(&m_thetaPid, m_raw_theta);
             const auto new_theta = m_thetaPid.state[2];
 //            arm_sin_cos_f32(new_theta, &m_thetaSin, &m_thetaCos);
             m_thetaSin = std::sin(new_theta);
