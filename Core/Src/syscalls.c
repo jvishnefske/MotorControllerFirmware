@@ -62,7 +62,7 @@
 extern int errno;
 extern int __io_putchar(int ch) __attribute__((weak));
 extern int __io_getchar(void) __attribute__((weak));
-#define USE_RAW_REGISTER 1
+#define USE_RAW_REGISTER 0
 #if USE_RAW_REGISTER
 register char * stack_ptr asm("sp");
 #endif
@@ -224,6 +224,9 @@ int _fork(void)
 
 int _execve(char *name, char **argv, char **env)
 {
+    (void)  env;
+    (void)  argv;
+    (void)  name;
 	errno = ENOMEM;
 	return -1;
 }

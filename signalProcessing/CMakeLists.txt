@@ -24,10 +24,12 @@ target_include_directories(signalProcessing PRIVATE
         ../
         ${CMAKE_CURRENT_SOURCE_DIR}
         )
+target_include_directories(signalProcessing PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/CMSIS_5/CMSIS/DSP/Include)
 target_link_libraries(signalProcessing PRIVATE
         CMSISDSPController
         CMSISDSPCommon
         )
+target_compile_options(signalProcessing PRIVATE ${COMPILE_WARN_OPTIONS})
 # skip unit test if we are compiling with arm-none-eabi
 message(STATUS "Compiling with ${CMAKE_SYSTEM_PROCESSOR}")
 # add test folder only if system processor is x86
