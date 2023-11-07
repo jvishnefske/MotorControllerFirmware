@@ -101,7 +101,7 @@ namespace math{
 namespace {
     struct p_HW global_hw;
     constexpr void set_led_bit(uint8_t led_bit) {
-        constexpr uint16_t led_mask = 0x00ff;
+//        constexpr uint16_t led_mask = 0x00ff;
 #if 0
         for(int i=0;i<1;++i) {
             // the HAL methed requires two calls since the upper 16 bits of bssr,
@@ -168,7 +168,7 @@ namespace {
             m_thetaSin = math::sin(m_thetaPid.state[2]);
             m_thetaCos = math::cos(m_thetaPid.state[2]);
             //arm_sin_cos_f32(0, &m_thetaSin, &m_thetaCos);
-            arm_pid_init_f32(&m_thetaPid, true);
+//            arm_pid_init_f32(&m_thetaPid, true);
             const auto pulse_width = m_period / 2;
             // set pwm time base
             m_timer.Init.Prescaler = 0;
@@ -179,15 +179,15 @@ namespace {
             HAL_TIM_PWM_Init(&m_timer);
             HAL_TIM_Base_Init(&m_timer);
             // initialize pwm config
-            m_sConfig1 = {
-                    .OCMode = TIM_OCMODE_PWM1,
-                    .Pulse = pulse_width,
-                    .OCPolarity = TIM_OCPOLARITY_HIGH,
-                    .OCNPolarity = TIM_OCNPOLARITY_HIGH,
-                    .OCFastMode = TIM_OCFAST_DISABLE,
-                    .OCIdleState = TIM_OCIDLESTATE_RESET,
-                    .OCNIdleState = TIM_OCNIDLESTATE_RESET
-            };
+            m_sConfig1 = {};
+            m_sConfig1.OCMode = TIM_OCMODE_PWM1;
+            m_sConfig1.Pulse = pulse_width;
+            m_sConfig1.OCPolarity = TIM_OCPOLARITY_HIGH;
+            m_sConfig1.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+            m_sConfig1.OCFastMode = TIM_OCFAST_DISABLE;
+            m_sConfig1.OCIdleState = TIM_OCIDLESTATE_RESET;
+            m_sConfig1.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+
             m_sConfig2 = m_sConfig1;
             m_sConfig3 = m_sConfig1;
             // set m_sConfig4 to enabled.
@@ -242,9 +242,11 @@ namespace {
             m_thetaSin = std::sin(theta);
             return update_from_phasePQ(d, q);
         }
+
         void update_from_phasePQ(Numeric  d, Numeric q){
             // todo update to constexpr funnction
-
+            // todo use q.
+            (void) q;
 
 #if 0 // trying to make this faster.
             const auto alpha = p*math::cos(theta) - q*math::sin(theta);
@@ -307,10 +309,10 @@ namespace {
         constexpr void setabc(const float a,const float b,const float c){
             // take a,b, c between 0 and 1 and convert to pwm duty cycle
             // todo make this constexpr
-            constexpr auto max_pwm = m_period;
-            constexpr auto min_pwm = 0;
-            constexpr auto max_duty = 1;
-            constexpr auto min_duty = -1;
+//            constexpr auto max_pwm = m_period;
+//            constexpr auto min_pwm = 0;
+//            constexpr auto max_duty = 1;
+//            constexpr auto min_duty = -1;
 //            m_sConfig1.Pulse = scaleToRange<float, m_period>(a);
 //            m_sConfig2.Pulse = scaleToRange<float, m_period>(b);
 //            m_sConfig3.Pulse = scaleToRange<float, m_period>(c);
@@ -408,7 +410,8 @@ namespace {
     public:
 
         static void conversion_complete(ADC_HandleTypeDef *hadc) {
-            // get adc driver from static member
+             (void)hadc;
+             // get adc driver from static member
             //auto adc_driver = static_cast<AdcDriver*>(hadc->UserData);
             // call callback
             //adc_driver->conversion_complete();
@@ -429,6 +432,7 @@ namespace {
 extern "C" {
     void push_message(enum Event e){
         // todo
+            (void)e;
     }
 [[noreturn]] void cppmain(struct p_HW hw) {
     global_hw = hw;
@@ -451,12 +455,12 @@ extern "C" {
     pwm4.enable_output();
     pwm2.setabc(0,0,0);
     ledPattern();
-    float angle = 0;
+//    float angle = 0;
     constexpr float d = .05; // the magnitude of the sinusoid
     for(;;) {
-        std::array<uint32_t, 8> adc_buffer={1,2,3};
+//        std::array<uint32_t, 8> adc_buffer={1,2,3};
         // iterate from 0 to 300
-        for (int i = 0; i < currentSignal.size(); i++) {
+        for (auto i = 0u; i < currentSignal.size(); i++) {
             for(auto stepPerSample=0; stepPerSample<3;stepPerSample++) {
                 constexpr auto phase_offset = currentSignal.size() / 3;
                 const auto a_signal = currentSignal.at(i);
