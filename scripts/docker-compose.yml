@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  builder:
+    image: arm-builder
+    build: .
+    volumes:
+      - .:/work
+    command: cmake -S /work -B /work/cmake-build && /bin/bash
