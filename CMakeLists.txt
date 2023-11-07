@@ -18,7 +18,7 @@ project(mcu2 C CXX ASM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
-set(COMPILE_WARN_OPTIONS -Werror=all -Werror=extra -Wno-error=unused-parameter)
+set(COMPILE_WARN_OPTIONS -Werror=all -Werror=extra -Werror=pedantic)
 
 #-DARM_CPU=cortex-m4 -DCMAKE_TOOLCHAIN_FILE=CMSIS/DSP/gcc.cmake
 option(HARDWARE_FLOAT "enable hardware floating point" OFF)
@@ -34,7 +34,7 @@ endif()
 
 add_compile_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
 add_compile_options(-ffunction-sections -fdata-sections -fno-common -fmessage-length=0)
-
+add_compile_options(${COMPILE_WARN_OPTIONS})
 # uncomment to mitigate c++17 absolute addresses warnings
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
 
@@ -60,7 +60,11 @@ include_directories(Core/Inc Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_
 add_definitions(-DUSE_HAL_DRIVER -DSTM32F407xx)
 
 file(GLOB_RECURSE SOURCES "Middlewares/*.*" "USB_DEVICE/*.*" "startup/*.*" "Drivers/*.*" "Core/*.*")
-
+#list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/syscalls.c)
+#list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/USB_DEVICE/Target/usbd_conf.c)
+list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_adc.c)
+list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c)
+list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c)
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F407ZETx_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
