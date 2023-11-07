@@ -168,7 +168,7 @@ namespace {
             m_thetaSin = math::sin(m_thetaPid.state[2]);
             m_thetaCos = math::cos(m_thetaPid.state[2]);
             //arm_sin_cos_f32(0, &m_thetaSin, &m_thetaCos);
-//            arm_pid_init_f32(&m_thetaPid, true);
+            arm_pid_init_f32(&m_thetaPid, true);
             const auto pulse_width = m_period / 2;
             // set pwm time base
             m_timer.Init.Prescaler = 0;
@@ -324,9 +324,19 @@ namespace {
             m_sConfig1.Pulse = static_cast<uint32_t>((a_+1) * m_period)/2;
             m_sConfig2.Pulse = static_cast<uint32_t>((b_+1) * m_period)/2;
             m_sConfig3.Pulse = static_cast<uint32_t>((c_+1) * m_period)/2;
-            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_1, m_sConfig1.Pulse);
-            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_2, m_sConfig2.Pulse);
-            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_3, m_sConfig3.Pulse);
+            const auto compare1 = m_sConfig1.Pulse;
+            const auto compare2 = m_sConfig2.Pulse;
+            const auto compare3 = m_sConfig3.Pulse;
+#ifdef USE_PWM_HAL
+            // this does not work with modern g++.
+            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_1, compare1);
+            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_2, compare2);
+            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_3, compare3);
+#else
+            m_timer.Instance->CCR1 = compare1;
+            m_timer.Instance->CCR2 = compare2;
+            m_timer.Instance->CCR3 = compare3;
+#endif
         }
     };
 
