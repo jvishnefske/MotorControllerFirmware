@@ -40,6 +40,8 @@ add_compile_options(${COMPILE_WARN_OPTIONS})
 
 # Enable assembler files preprocessing
 add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-x$<SEMICOLON>assembler-with-cpp>)
+# workarount to avoid inline assembly requirment for _sbrk
+add_link_options("--specs=nosys.specs")
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message(STATUS "Maximum optimization for speed")
@@ -60,11 +62,7 @@ include_directories(Core/Inc Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_
 add_definitions(-DUSE_HAL_DRIVER -DSTM32F407xx)
 
 file(GLOB_RECURSE SOURCES "Middlewares/*.*" "USB_DEVICE/*.*" "startup/*.*" "Drivers/*.*" "Core/*.*")
-#list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/syscalls.c)
-#list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/USB_DEVICE/Target/usbd_conf.c)
 list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_adc.c)
-list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c)
-list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c)
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F407ZETx_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
