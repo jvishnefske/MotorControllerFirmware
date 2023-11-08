@@ -37,4 +37,5 @@ if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86")
     message(STATUS "Adding test folder")
     add_subdirectory(test)
 endif()
+target_link_libraries(signalProcessing PRIVATE -Werror=pedantic -Werror=conversion)
 
