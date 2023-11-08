@@ -168,7 +168,7 @@ namespace {
             m_thetaSin = math::sin(m_thetaPid.state[2]);
             m_thetaCos = math::cos(m_thetaPid.state[2]);
             //arm_sin_cos_f32(0, &m_thetaSin, &m_thetaCos);
-            arm_pid_init_f32(&m_thetaPid, true);
+//            arm_pid_init_f32(&m_thetaPid, true);
             const auto pulse_width = m_period / 2;
             // set pwm time base
             m_timer.Init.Prescaler = 0;
