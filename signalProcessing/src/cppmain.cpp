@@ -324,9 +324,19 @@ namespace {
             m_sConfig1.Pulse = static_cast<uint32_t>((a_+1) * m_period)/2;
             m_sConfig2.Pulse = static_cast<uint32_t>((b_+1) * m_period)/2;
             m_sConfig3.Pulse = static_cast<uint32_t>((c_+1) * m_period)/2;
-            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_1, m_sConfig1.Pulse);
-            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_2, m_sConfig2.Pulse);
-            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_3, m_sConfig3.Pulse);
+            const auto compare1 = m_sConfig1.Pulse;
+            const auto compare2 = m_sConfig2.Pulse;
+            const auto compare3 = m_sConfig3.Pulse;
+#ifdef USE_PWM_HAL
+            // this does not work with modern g++.
+            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_1, compare1);
+            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_2, compare2);
+            __HAL_TIM_SET_COMPARE(&m_timer, TIM_CHANNEL_3, compare3);
+#else
+            m_timer.Instance->CCR1 = compare1;
+            m_timer.Instance->CCR2 = compare2;
+            m_timer.Instance->CCR3 = compare3;
+#endif
         }
     };
 
